@@ -32,15 +32,15 @@ class Crawler {
       if (this.delay > 0) await new Promise(r => setTimeout(r, this.delay * i));
 
       let post = await this.getPost(postInfo.url_slug);
+      const save_title = post.title.replace(/[\\~#%&*{}/:<>?| \"-]/g, "_");
       if (!post) {
         console.log(`⚠️  " ${postInfo.url_slug} " 가져올 수 없는 글을 건너뛰었습니다.`);
         return;
       }
-
-      post.body = await this.getImage(post.body);
+      post.body = await this.getImage(post.body, save_title);
 
       await this.writePost(post);
-      console.log(`✅ " ${post.title} " 백업 완료`);
+      console.log(`✅ " ${save_title} " 백업 완료`);
     });
   }
 
@@ -119,24 +119,28 @@ class Crawler {
     }
   }
 
-  async getImage(body) {
+  async getImage(body, title) {
     const regex = /!\[[^\]]*\]\((.*?.png|.jpeg|.jpg|.webp|.svg|.gif|.tiff)\s*("(?:.*[^"])")?\s*\)|!\[[^\]]*\]\((.*?)\s*("(?:.*[^"])")?\s*\)/g;
+    const global_path = join('backup', 'content', title);
+    !fs.existsSync(global_path) && fs.mkdirSync(global_path);
+    var idx = 0;
     
-    body = body.replace(regex, (_, url) => {
+    body = body.replace(regex, (url) => {
       if (!url) return;
+      const find_url_result = url.match(/\((.*?)\)/)[0].replace("(", "").replace(")", "");
+      const ext = find_url_result.split('.').slice(-1)[0].replace(")", "");
+      const path = join(global_path, decodeURI(`${String(idx)}.${ext}`));
 
-      const filename = url.replace(/\/\s*$/,'').split('/').slice(-2).join('-').trim();
-      const path = join('backup', 'images', decodeURI(filename));
-      
       this.__api({
         method: 'get',
-        url: encodeURI(decodeURI(url)),
+        url: encodeURI(decodeURI(find_url_result)),
         responseType: 'stream',
       })
       .then(resp => resp.data.pipe(fs.createWriteStream(path)))
       .catch(e => console.error(`⚠️ 이미지를 다운 받는데 오류가 발생했습니다 / url = ${url} , e = ${e}`));
+      idx += 1;
+      return `![](./${title}/${String(idx-1)}.${ext})`;
 
-      return `![](/images/${filename})`;
     });
 
     return body;
