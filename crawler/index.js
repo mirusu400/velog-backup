@@ -39,7 +39,7 @@ class Crawler {
       }
       post.body = await this.getImage(post.body, save_title);
 
-      await this.writePost(post);
+      await this.writePost(post, save_title);
       console.log(`✅ " ${save_title} " 백업 완료`);
     });
   }
@@ -94,16 +94,10 @@ class Crawler {
     return response.data.data.post;
   }
 
-  async writePost(post) {
+  async writePost(post, title) {
     const excludedChar = ['\\\\', '/', ':' ,'\\*' ,'\\?' ,'"' ,'<' ,'>' ,'\\|'];
-    let title = post.title;
 
-    for (const char of excludedChar) {
-      const re = new RegExp(char, 'g');
-      title = title.replace(re, '');
-    }
-
-    const path = join('backup', 'content', `${title}.md`);
+    const path = join('backup', 'content', title, `${title}.md`);
 
     post.body = '---\n'
                 + `title: "${post.title}"\n`
@@ -139,7 +133,7 @@ class Crawler {
       .then(resp => resp.data.pipe(fs.createWriteStream(path)))
       .catch(e => console.error(`⚠️ 이미지를 다운 받는데 오류가 발생했습니다 / url = ${url} , e = ${e}`));
       idx += 1;
-      return `![](./${title}/${String(idx-1)}.${ext})`;
+      return `![](./${String(idx-1)}.${ext})`;
 
     });
 
