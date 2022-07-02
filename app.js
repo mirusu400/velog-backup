@@ -10,7 +10,6 @@ program.option('-d, --delay <ms>', '요청 딜레이 시간')
 program.option('-c, --cert <access_token>', 'velog 유저 access_token')
 
 program.parse(process.argv);
-program.username = "mirusu400";
 
 !fs.existsSync('./backup') && fs.mkdirSync('./backup');
 !fs.existsSync('./backup/content') && fs.mkdirSync('./backup/content');
